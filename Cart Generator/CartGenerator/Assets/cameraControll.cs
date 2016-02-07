@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.IO;
 using System.Collections;
 
 public class cameraControll : MonoBehaviour {
@@ -9,9 +10,15 @@ public class cameraControll : MonoBehaviour {
         public int[] e;
     }
 
-	// Use this for initialization
-	void Start () {
+    class walls
+    {
+        public float x, z, sx, sz;
+    }
+
+    // Use this for initialization
+    void Start () {
         g = new graphV[1024];
+        w = new walls[1024];
         ax = 0;
         az = 0;
         bx = 0;
@@ -25,6 +32,9 @@ public class cameraControll : MonoBehaviour {
     GameObject last, last2;
     int gV = 0;
     graphV[] g;
+    int wk = 0;
+    walls[] w;
+    
 
     public void UseWalls()
     {
@@ -154,9 +164,25 @@ public class cameraControll : MonoBehaviour {
             var W = GameObject.Instantiate(GameObject.Find("/Wall"));
             W.transform.position = new Vector3((aax + bbx) / 2, 0, (aaz + bbz) / 2);
             if (ax == bx)
+            {
                 W.transform.localScale = new Vector3(0.1f, 6, Mathf.Abs(bz - az));
+                w[wk] = new walls();
+                w[wk].x = (aax + bbx) / 2;
+                w[wk].z = (aaz + bbz) / 2;
+                w[wk].sx = 0.1f;
+                w[wk].sz = Mathf.Abs(bz - az);
+                wk++;
+            }
             else
+            {
                 W.transform.localScale = new Vector3(Mathf.Abs(bx - ax), 6, 0.1f);
+                w[wk] = new walls();
+                w[wk].x = (aax + bbx) / 2;
+                w[wk].z = (aaz + bbz) / 2;
+                w[wk].sx = Mathf.Abs(bx - ax);
+                w[wk].sz = 0.1f;
+                wk++;
+            }
         }
     }
 
@@ -289,6 +315,8 @@ public class cameraControll : MonoBehaviour {
             }
             a.e[a.en] = b.n;
             b.e[b.en] = a.n;
+            g[a.n] = a;
+            g[b.n] = b;
         }
     }
 
@@ -327,9 +355,21 @@ public class cameraControll : MonoBehaviour {
             last = W;
             W.transform.position = new Vector3(ax - 3.5f, 0, az);
             W.transform.localScale = new Vector3(3, 6, 0.1f);
+            w[wk] = new walls();
+            w[wk].x = ax - 3.5f;
+            w[wk].z = az;
+            w[wk].sx = 3;
+            w[wk].sz = 0.1f;
+            wk++;
             W = GameObject.Instantiate(GameObject.Find("/Wall"));
             W.transform.position = new Vector3(ax + 3.5f, 0, az);
             W.transform.localScale = new Vector3(3, 6, 0.1f);
+            w[wk] = new walls();
+            w[wk].x = ax + 3.5f;
+            w[wk].z = az;
+            w[wk].sx = 3;
+            w[wk].sz = 0.1f;
+            wk++;
             last2 = W;
         }
         else
@@ -338,11 +378,54 @@ public class cameraControll : MonoBehaviour {
             last = W;
             W.transform.position = new Vector3(ax, 0, az - 3.5f);
             W.transform.localScale = new Vector3(0.1f, 6, 3);
+            w[wk] = new walls();
+            w[wk].x = ax;
+            w[wk].z = az - 3.5f;
+            w[wk].sx = 0.1f;
+            w[wk].sz = 3;
+            wk++;
             W = GameObject.Instantiate(GameObject.Find("/Wall"));
             W.transform.position = new Vector3(ax, 0, az + 3.5f);
             W.transform.localScale = new Vector3(0.1f, 6, 3);
+            w[wk] = new walls();
+            w[wk].x = ax;
+            w[wk].z = az + 3.5f;
+            w[wk].sx = 0.1f;
+            w[wk].sz = 3;
+            wk++;
             last2 = W;
         }
+    }
+
+    public void Save()
+    {
+        using (StreamWriter f1 = new StreamWriter("walls.fdk", true))
+        {
+            f1.WriteLine(wk);
+            for (int i = 0; i < wk; i++)
+            {
+                f1.WriteLine("{0} {1} {2} {3}", w[i].x, w[i].z, w[i].sx, w[i].sz);
+            }
+            f1.WriteLine();
+            f1.WriteLine();
+            f1.WriteLine();
+        }
+        using (StreamWriter f2 = new StreamWriter("ai.fdk", true))
+        {
+            f2.WriteLine(gV);
+            for (int i = 0; i < gV; i++)
+            {
+                f2.WriteLine("{0} {1} {2} {3}", g[i].x, g[i].z, g[i].n, g[i].en);
+                for (int j = 0; j < g[i].en; j++)
+                {
+                    f2.Write("{0} ", g[i].e[j]);
+                }
+                f2.Write("\n");
+            }
+            f2.WriteLine();
+            f2.WriteLine();
+            f2.WriteLine();
+        }        
     }
 
     // Update is called once per frame
